@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FinSight AI</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --border: #e3e6eb; --text: #1b1f24; --muted: #667085;
+    --accent: #0f766e; --accent-soft: #e6f4f2; --user: #0f766e; --user-text: #fff; --danger: #b42318;
+    --gold: #b7791f; --up: #16a34a; --down: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --panel: #171b21; --border: #2a3039; --text: #e7eaee; --muted: #8b95a3;
+      --accent: #2dd4bf; --accent-soft: #123330; --user: #134e48; --user-text: #e7fffb; --danger: #f97066;
+      --gold: #f6c453; --up: #22c55e; --down: #f87171;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; }
+  aside { width: 300px; flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 16px; gap: 14px; }
+  h1 { font-size: 17px; margin: 0; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0; }
+  .drop { border: 1.5px dashed var(--border); border-radius: 10px; padding: 16px 12px; text-align: center; color: var(--muted); cursor: pointer; transition: .15s; font-size: 14px; }
+  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+  .drop strong { color: var(--accent); }
+  .new-chat { font-weight: 600; text-align: left; padding: 9px 12px; }
+  #chats { flex: 1; min-height: 80px; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
+  #chats .group { font-size: 11px; font-weight: 600; color: var(--muted); margin: 12px 0 4px 8px; }
+  #chats .group:first-child { margin-top: 0; }
+  .chat-item { display: flex; align-items: center; gap: 4px; padding: 7px 8px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .chat-item:hover { background: var(--bg); }
+  .chat-item.active { background: var(--accent-soft); }
+  .chat-item .title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chat-item .icon-btn { visibility: hidden; font-size: 13px; }
+  .chat-item:hover .icon-btn, .chat-item.active .icon-btn { visibility: visible; }
+  #chats .meta { padding: 4px 8px; }
+  .docs-box { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
+  #docs { list-style: none; margin: 0; padding: 0; overflow-y: auto; max-height: 150px; display: flex; flex-direction: column; gap: 6px; }
+  #docs li { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+  #docs .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .icon-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 15px; padding: 0 3px; line-height: 1; }
+  .icon-btn:hover { color: var(--accent); }
+  .icon-btn.del:hover { color: var(--danger); }
+  .status { font-size: 13px; color: var(--muted); min-height: 18px; }
+  .status.err { color: var(--danger); }
+  .ghost { background: none; border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 7px 10px; cursor: pointer; font-size: 13px; }
+  .ghost:hover { border-color: var(--accent); }
+  .ghost.gold { color: var(--gold); border-color: var(--gold); font-weight: 600; }
+  .note { font-size: 11px; color: var(--muted); }
+
+  main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #goldPanel { display: none; border-bottom: 1px solid var(--border); background: var(--panel); padding: 12px max(16px, calc((100% - 900px) / 2)); }
+  #goldPanel.open { display: block; }
+  .gold-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .gold-bar .title { font-weight: 700; color: var(--gold); }
+  .gold-bar .price { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .gold-bar .spacer { flex: 1; }
+  .gold-bar select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; font: inherit; font-size: 13px; }
+  #goldChart { height: 300px; position: relative; }
+  #goldMsg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--muted); font-size: 14px; padding: 16px; z-index: 3; pointer-events: none; }
+  .legend { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .legend i { display: inline-block; width: 12px; height: 2px; vertical-align: middle; margin: 0 4px 0 10px; }
+
+  #messages { flex: 1; overflow-y: auto; padding: 28px max(16px, calc((100% - 780px) / 2)); display: flex; flex-direction: column; gap: 16px; }
+  .msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; word-wrap: break-word; }
+  .msg.user { align-self: flex-end; background: var(--user); color: var(--user-text); white-space: pre-wrap; }
+  .msg.user img { display: block; max-width: 260px; max-height: 200px; border-radius: 8px; margin-bottom: 6px; }
+  .msg.bot { align-self: flex-start; background: var(--panel); border: 1px solid var(--border); max-width: 92%; }
+  .msg.bot.err { border-color: var(--danger); color: var(--danger); }
+  .msg.event { align-self: center; text-align: center; font-size: 12px; color: var(--muted); padding: 2px 10px; }
+  .doc-actions { margin-top: 8px; }
+  .doc-hint { margin-top: 4px; font-size: 11px; }
+  .msg.user .img-note { display: block; font-size: 12px; opacity: .8; margin-bottom: 4px; }
+  .msg.bot .label { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+  .msg.bot p:first-child { margin-top: 0; } .msg.bot p:last-child { margin-bottom: 0; }
+  .msg.bot h2 { font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--text); margin: 14px 0 6px; }
+  .msg.bot table { border-collapse: collapse; font-size: 14px; display: block; overflow-x: auto; }
+  .msg.bot td, .msg.bot th { border: 1px solid var(--border); padding: 4px 8px; text-align: left; }
+  .msg.bot code { background: var(--accent-soft); padding: 1px 4px; border-radius: 4px; }
+  .typing::after { content: "▍"; animation: blink 1s steps(1) infinite; color: var(--accent); }
+  @keyframes blink { 50% { opacity: 0; } }
+  .empty { margin: auto; text-align: center; color: var(--muted); max-width: 480px; }
+  .empty h3 { color: var(--text); margin-bottom: 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+  .chips button { border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+  .chips button:hover { border-color: var(--accent); }
+
+  .composer { padding: 12px max(16px, calc((100% - 780px) / 2)) 20px; border-top: 1px solid var(--border); background: var(--panel); }
+  #preview { display: none; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
+  #preview.show { display: flex; }
+  #preview img { height: 48px; border-radius: 6px; border: 1px solid var(--border); }
+  form { display: flex; gap: 8px; align-items: flex-end; }
+  textarea { flex: 1; resize: none; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font: inherit; background: var(--bg); color: var(--text); max-height: 160px; }
+  textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .attach { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; width: 44px; height: 44px; cursor: pointer; font-size: 18px; color: var(--muted); }
+  .attach:hover { border-color: var(--accent); color: var(--accent); }
+  .btn { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 0 18px; height: 44px; font-weight: 600; cursor: pointer; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  @media (max-width: 760px) {
+    body { flex-direction: column; height: auto; min-height: 100vh; }
+    aside { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+    #docs { max-height: 160px; }
+    #chats { flex: none; max-height: 200px; }
+    .chat-item .icon-btn { visibility: visible; }
+    main { height: 90vh; }
+    #goldChart { height: 240px; }
+  }
+</style>
+</head>
+<body>
+<aside>
+  <h1>📈 FinSight AI</h1>
+  <button class="ghost new-chat" id="newChat">＋ New chat</button>
+  <nav id="chats" aria-label="Chats"></nav>
+
+  <div class="docs-box">
+    <h2>Documents in this chat</h2>
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept=".pdf,.txt,.md" multiple hidden>
+      <strong>Upload</strong> or drop reports here<br><span style="font-size:12px">PDF, TXT, MD · up to 5 files per chat · 20 MB each</span>
+    </label>
+    <div class="status" id="status"></div>
+    <ul id="docs"></ul>
+  </div>
+  <button class="ghost gold" id="goldToggle">🥇 Gold XAU/USD live chart</button>
+  <div class="note">AI-generated analysis for education only. Not financial advice or trading signals.</div>
+</aside>
+
+<main>
+  <section id="goldPanel">
+    <div class="gold-bar">
+      <span class="title">XAU/USD</span>
+      <span class="price" id="goldPrice"></span>
+      <span class="spacer"></span>
+      <select id="goldInterval">
+        <option value="15min">15m</option><option value="1h" selected>1H</option><option value="4h">4H</option>
+        <option value="1day">1D</option><option value="1week">1W</option>
+      </select>
+      <button class="ghost" id="goldRefresh" title="Refresh">↻</button>
+      <button class="ghost gold" id="goldAsk">Analyse with AI</button>
+    </div>
+    <div id="goldChart"><div id="goldMsg">Loading…</div></div>
+    <div class="legend"><i style="background:#3b82f6"></i>SMA 20<i style="background:#a855f7"></i>SMA 50 · data: Twelve Data</div>
+  </section>
+
+  <div id="messages">
+    <div class="empty" id="empty">
+      <h3>Ask about your financial documents, gold charts or markets</h3>
+      Each chat has its own documents. Upload a report to get an instant summary, attach a chart screenshot (📎 or paste) for analysis,
+      or ask about live gold prices.
+      <div class="chips">
+        <button>What is the current XAU/USD trend on the 4H chart?</button>
+        <button>Give me gold support and resistance levels for today</button>
+        <button>What is the gold market outlook for this week?</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="composer">
+    <div id="preview"><img id="previewImg" alt=""><span id="previewName"></span><button class="icon-btn del" id="removeImg" title="Remove image">×</button></div>
+    <form id="form">
+      <input type="file" id="imageInput" accept="image/png,image/jpeg,image/webp" hidden>
+      <button type="button" class="attach" id="attach" title="Attach chart screenshot">📎</button>
+      <textarea id="input" rows="1" placeholder="Ask a question or attach a chart…"></textarea>
+      <button class="btn" id="send">Send</button>
+    </form>
+    <div class="hint">Enter to send · Shift+Enter for new line · Ctrl+V to paste a chart screenshot</div>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const messages = $('messages'), input = $('input'), send = $('send'), statusEl = $('status');
+// randomUUID only exists on https/localhost; fall back when opened over a LAN IP.
+const newId = () => crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+// Each chat has its own memory and documents; it is saved server-side on its first message or upload.
+let conversationId = newId();
+const chatParam = () => 'conversationId=' + encodeURIComponent(conversationId);
+let busy = false;
+let pendingImage = null;
+const emptyHtml = $('empty').outerHTML;
+
+const md = text => DOMPurify.sanitize(marked.parse(text));
+const esc = text => Object.assign(document.createElement('span'), { textContent: text }).innerHTML;
+const store = {
+  get: key => { try { return localStorage.getItem(key); } catch { return null; } },
+  set: (key, value) => { try { value ? localStorage.setItem(key, value) : localStorage.removeItem(key); } catch {} },
+};
+const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+function setStatus(text, isErr = false) {
+  statusEl.textContent = text;
+  statusEl.className = 'status' + (isErr ? ' err' : '');
+}
+
+function addMessage(role, content, label) {
+  $('empty')?.remove();
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  if (role === 'user') div.textContent = content; else div.innerHTML = content;
+  if (label) div.dataset.label = label;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+  return div;
+}
+
+/** Reads an NDJSON token stream ({"t":..} / {"error":..}) and renders it as Markdown into el. */
+async function streamInto(el, responsePromise) {
+  const labelHtml = el.dataset.label ? `<div class="label">${esc(el.dataset.label)}</div>` : '';
+  el.classList.add('typing');
+  el.innerHTML = labelHtml;
+  let answer = '';
+  try {
+    const res = await responsePromise;
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const chunk = JSON.parse(line);
+        if (chunk.error) throw new Error(chunk.error);
+        answer += chunk.t;
+        el.innerHTML = labelHtml + md(answer);
+        messages.scrollTop = messages.scrollHeight;
+      }
+    }
+    if (!answer) el.innerHTML = labelHtml + '<em>No answer received.</em>';
+  } catch (e) {
+    el.classList.add('err');
+    el.textContent = '⚠️ ' + e.message;
+  } finally {
+    el.classList.remove('typing');
+  }
+}
+
+// ---------- documents ----------
+// Uploads embed in the background on the server. Files uploaded from this page are tracked
+// here so a "ready" message with action chips appears once they finish; nothing runs until
+// the user picks an action or asks a question. The list is polled while anything is processing.
+const MAX_DOCS = 5; // keep in sync with DocumentService.MAX_DOCUMENTS_PER_CHAT
+const awaitingReady = new Set(); // `${chatId}\u0000${name}`
+let currentDocs = [];
+let pollTimer = null;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/** "report.pdf is ready" note with a Summarize chip; anything else the user asks in the chat box. */
+function addDocReadyMessage(name, text) {
+  const el = addMessage('event', esc(text));
+  const chips = document.createElement('div');
+  chips.className = 'chips doc-actions';
+  const summarizeBtn = document.createElement('button');
+  summarizeBtn.textContent = '📊 Summarize';
+  summarizeBtn.dataset.summarize = name;
+  chips.appendChild(summarizeBtn);
+  el.appendChild(chips);
+  el.insertAdjacentHTML('beforeend', '<div class="doc-hint">…or ask anything about it below</div>');
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function loadDocs() {
+  const chatId = conversationId;
+  let docs;
+  try {
+    docs = await (await fetch('/api/documents?' + chatParam())).json();
+  } catch { setStatus('Could not load documents', true); return; }
+  if (chatId !== conversationId) return; // switched chats while loading
+  currentDocs = docs;
+
+  const ul = $('docs');
+  ul.innerHTML = '';
+  if (!docs.length) ul.innerHTML = '<li class="meta">No documents in this chat</li>';
+  for (const d of docs) {
+    const li = document.createElement('li');
+    const state = d.status === 'processing' ? `⏳ ${d.embedded}/${d.chunks}`
+      : d.status === 'failed' ? '⚠️ failed' : `${d.chunks}`;
+    li.innerHTML = `<span>📄</span><span class="name"></span><span class="meta"></span>
+      ${d.status === 'ready' ? '<button class="icon-btn" title="Summarize">📝</button>' : ''}
+      <button class="icon-btn del" title="${d.status === 'processing' ? 'Cancel upload' : 'Delete'}">×</button>`;
+    li.querySelector('.name').textContent = d.name;
+    li.querySelector('.meta').textContent = state;
+    li.title = d.message ? `${d.name}: ${d.message}` : `${d.name} (${d.chunks} chunks)`;
+    li.querySelector('[title="Summarize"]')?.addEventListener('click', () => summarize(d.name));
+    li.querySelector('.del').onclick = () => deleteDoc(d);
+    ul.appendChild(li);
+  }
+
+  const processing = docs.filter(d => d.status === 'processing');
+  if (processing.length) {
+    const p = processing[0];
+    setStatus(`⏳ ${p.name}: ${p.embedded}/${p.chunks} chunks · ${p.message || ''}`);
+  }
+  for (const d of docs) {
+    const key = `${chatId}\u0000${d.name}`;
+    if (!awaitingReady.has(key) || d.status === 'processing') continue;
+    awaitingReady.delete(key);
+    if (d.status === 'failed') {
+      setStatus(`✗ ${d.name}: ${d.message}`, true);
+    } else {
+      setStatus(`✓ ${d.name} ready (${d.chunks} chunks)`);
+      addDocReadyMessage(d.name, `📄 ${d.name} is ready (${d.chunks} chunks)`);
+    }
+  }
+
+  clearTimeout(pollTimer);
+  if (processing.length) pollTimer = setTimeout(loadDocs, 2000);
+}
+
+async function uploadFiles(files) {
+  if (!files.length) return;
+  // Re-uploading a file with the same name replaces it, so it doesn't use up a slot.
+  const existing = new Set(currentDocs.filter(d => d.status !== 'failed').map(d => d.name));
+  const newCount = new Set(files.map(f => f.name).filter(n => !existing.has(n))).size;
+  if (existing.size + newCount > MAX_DOCS) {
+    const left = Math.max(0, MAX_DOCS - existing.size);
+    setStatus(`A chat can have at most ${MAX_DOCS} documents. You can add ${left} more here, or start a new chat.`, true);
+    return;
+  }
+  for (const file of files) {
+    setStatus(`Uploading ${file.name}…`);
+    const body = new FormData();
+    body.append('file', file);
+    try {
+      const res = await fetch('/api/documents?' + chatParam(), { method: 'POST', body });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.message || res.statusText);
+      awaitingReady.add(`${conversationId}\u0000${data.name}`);
+      store.set('lastChat', conversationId);
+      loadChats();
+    } catch (e) { setStatus(`✗ ${file.name}: ${e.message}`, true); }
+  }
+  loadDocs();
+}
+
+async function summarize(name) {
+  const chatId = conversationId;
+  while (busy) await sleep(500); // wait for an answer that is still streaming
+  if (chatId !== conversationId) return;
+  busy = true; send.disabled = true;
+  const el = addMessage('bot', '', `📊 Summary · ${name}`);
+  await streamInto(el, fetch('/api/documents/' + encodeURIComponent(name) + '/summary?' + chatParam(), { method: 'POST' }));
+  busy = false; send.disabled = false;
+  loadChats();
+}
+
+async function deleteDoc(d) {
+  const question = d.status === 'processing' ? `Cancel the upload of "${d.name}"?` : `Remove "${d.name}" from this chat?`;
+  if (!confirm(question)) return;
+  awaitingReady.delete(`${conversationId}\u0000${d.name}`);
+  await fetch('/api/documents/' + encodeURIComponent(d.name) + '?' + chatParam(), { method: 'DELETE' });
+  setStatus(d.status === 'processing' ? `Cancelled ${d.name}` : `Removed ${d.name}`);
+  loadDocs();
+}
+
+$('file').onchange = e => { uploadFiles([...e.target.files]); e.target.value = ''; };
+const drop = $('drop');
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); uploadFiles([...e.dataTransfer.files]); };
+
+// ---------- image attachment ----------
+function setImage(file) {
+  if (!file) return;
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) { setStatus('Only PNG, JPEG or WEBP images', true); return; }
+  pendingImage = file;
+  $('previewImg').src = URL.createObjectURL(file);
+  $('previewName').textContent = file.name || 'pasted-chart.png';
+  $('preview').classList.add('show');
+  input.focus();
+}
+function clearImage() {
+  pendingImage = null;
+  $('preview').classList.remove('show');
+  $('imageInput').value = '';
+}
+$('attach').onclick = () => $('imageInput').click();
+$('imageInput').onchange = e => setImage(e.target.files[0]);
+$('removeImg').onclick = clearImage;
+document.addEventListener('paste', e => {
+  const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+  if (item) { e.preventDefault(); setImage(item.getAsFile()); }
+});
+
+// ---------- chat ----------
+async function ask(question) {
+  if (busy || (!question.trim() && !pendingImage)) return;
+  busy = true; send.disabled = true;
+  const userEl = addMessage('user', question || 'Analyse this chart.');
+  const body = new FormData();
+  body.append('message', question);
+  body.append('conversationId', conversationId);
+  if (pendingImage) {
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(pendingImage);
+    userEl.prepend(img);
+    body.append('image', pendingImage, pendingImage.name || 'chart.png');
+    clearImage();
+  }
+  store.set('lastChat', conversationId);
+  const bot = addMessage('bot', '');
+  await streamInto(bot, fetch('/api/chat', { method: 'POST', body }));
+  busy = false; send.disabled = false; input.focus();
+  loadChats();
+}
+
+// ---------- chat list (sidebar) ----------
+function dayGroup(iso) {
+  const d = new Date(iso), today = new Date();
+  const days = Math.floor((new Date(today.toDateString()) - new Date(d.toDateString())) / 86400000);
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return 'Previous 7 days';
+  if (days < 30) return 'Previous 30 days';
+  return 'Older';
+}
+
+/** Renders the sidebar chat list and returns the chats (empty on failure). */
+async function loadChats() {
+  const nav = $('chats');
+  try {
+    const chats = await (await fetch('/api/chats')).json();
+    nav.innerHTML = '';
+    if (!chats.length) { nav.innerHTML = '<div class="meta">No chats yet</div>'; return chats; }
+    let lastGroup = '';
+    for (const c of chats) {
+      const group = dayGroup(c.updatedAt);
+      if (group !== lastGroup) {
+        nav.insertAdjacentHTML('beforeend', `<div class="group">${group}</div>`);
+        lastGroup = group;
+      }
+      const item = document.createElement('div');
+      item.className = 'chat-item' + (c.id === conversationId ? ' active' : '');
+      item.innerHTML = `<span class="title"></span>
+        <button class="icon-btn" title="Rename">✎</button><button class="icon-btn del" title="Delete">×</button>`;
+      item.querySelector('.title').textContent = c.title;
+      item.title = c.title;
+      const [renameBtn, delBtn] = item.querySelectorAll('button');
+      item.onclick = () => openChat(c.id);
+      renameBtn.onclick = e => { e.stopPropagation(); renameChat(c); };
+      delBtn.onclick = e => { e.stopPropagation(); deleteChat(c); };
+      nav.appendChild(item);
+    }
+    return chats;
+  } catch {
+    nav.innerHTML = '<div class="meta">Could not load chats</div>';
+    return [];
+  }
+}
+
+function resetMessages() {
+  messages.innerHTML = emptyHtml;
+}
+
+function newChat() {
+  if (busy) { setStatus('Wait for the current answer to finish', true); return; }
+  conversationId = newId();
+  store.set('lastChat', null);
+  resetMessages();
+  clearImage();
+  setStatus('');
+  loadDocs();
+  loadChats();
+  input.focus();
+}
+
+async function openChat(id) {
+  if (busy) { setStatus('Wait for the current answer to finish', true); return; }
+  if (id === conversationId && !$('empty')) return;
+  conversationId = id;
+  store.set('lastChat', id);
+  setStatus('');
+  document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+  loadChats();
+  resetMessages();
+  await loadDocs(); // the document chips below need this chat's document list
+  if (id !== conversationId) return;
+  try {
+    const res = await fetch('/api/chats/' + encodeURIComponent(id) + '/messages');
+    if (!res.ok) throw new Error(res.statusText);
+    const history = await res.json();
+    if (id !== conversationId) return; // user switched again while loading
+    for (const m of history) {
+      if (m.role === 'user') {
+        const el = addMessage('user', m.content);
+        if (m.hasImage) el.insertAdjacentHTML('afterbegin', '<span class="img-note">🖼️ chart image attached</span>');
+      } else if (m.role === 'event') {
+        // Upload events carry the file name in `label`; show its chips only if it's still in the chat.
+        if (m.label && currentDocs.some(d => d.name === m.label && d.status === 'ready')) {
+          addDocReadyMessage(m.label, m.content);
+        } else {
+          addMessage('event', esc(m.content));
+        }
+      } else {
+        addMessage('bot', (m.label ? `<div class="label">${esc(m.label)}</div>` : '') + md(m.content));
+      }
+    }
+  } catch (e) { setStatus('Could not load chat: ' + e.message, true); }
+}
+
+async function renameChat(c) {
+  const title = prompt('Rename chat', c.title);
+  if (!title || !title.trim() || title === c.title) return;
+  await fetch('/api/chats/' + encodeURIComponent(c.id), {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title })
+  });
+  loadChats();
+}
+
+async function deleteChat(c) {
+  if (!confirm(`Delete "${c.title}"? Its messages and documents will be removed.`)) return;
+  if (busy && c.id === conversationId) { setStatus('Wait for the current answer to finish', true); return; }
+  await fetch('/api/chats/' + encodeURIComponent(c.id), { method: 'DELETE' });
+  if (c.id === conversationId) newChat(); else loadChats();
+}
+
+$('form').onsubmit = e => { e.preventDefault(); const q = input.value; input.value = ''; autosize(); ask(q); };
+input.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('form').requestSubmit(); } };
+const autosize = () => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; };
+input.oninput = autosize;
+// Delegated, because chips are re-created with every chat. A document's Summarize chip carries
+// the file name; the empty-state suggestions just send their own text.
+messages.addEventListener('click', e => {
+  const chip = e.target.closest('.chips button');
+  if (!chip) return;
+  if (chip.dataset.summarize) summarize(chip.dataset.summarize);
+  else ask(chip.textContent);
+});
+$('newChat').onclick = newChat;
+
+// ---------- gold chart ----------
+let chart, candleSeries, sma20Series, sma50Series;
+
+function initChart() {
+  const text = cssVar('--muted'), grid = cssVar('--border');
+  chart = LightweightCharts.createChart($('goldChart'), {
+    autoSize: true,
+    layout: { background: { color: 'transparent' }, textColor: text },
+    grid: { vertLines: { color: grid }, horzLines: { color: grid } },
+    timeScale: { timeVisible: true, borderColor: grid },
+    rightPriceScale: { borderColor: grid },
+  });
+  const up = cssVar('--up'), down = cssVar('--down');
+  candleSeries = chart.addCandlestickSeries({ upColor: up, downColor: down, wickUpColor: up, wickDownColor: down, borderVisible: false });
+  sma20Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+  sma50Series = chart.addLineSeries({ color: '#a855f7', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+}
+
+async function loadGold() {
+  if (!chart) initChart();
+  const msg = $('goldMsg');
+  msg.style.display = 'flex';
+  msg.textContent = 'Loading…';
+  try {
+    const res = await fetch('/api/gold/chart?interval=' + $('goldInterval').value);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || res.statusText);
+    candleSeries.setData(data.candles);
+    sma20Series.setData(data.sma20);
+    sma50Series.setData(data.sma50);
+    chart.timeScale().fitContent();
+    const c = data.candles, last = c[c.length - 1], first = c[0];
+    const pct = ((last.close - first.close) / first.close * 100).toFixed(2);
+    $('goldPrice').innerHTML = `${last.close.toFixed(2)} <span style="color:var(${pct >= 0 ? '--up' : '--down'})">${pct >= 0 ? '+' : ''}${pct}%</span>`;
+    msg.style.display = 'none';
+  } catch (e) {
+    msg.textContent = '⚠️ ' + e.message;
+  }
+}
+
+$('goldToggle').onclick = () => {
+  const open = $('goldPanel').classList.toggle('open');
+  if (open) loadGold();
+};
+$('goldInterval').onchange = loadGold;
+$('goldRefresh').onclick = loadGold;
+$('goldAsk').onclick = () => {
+  const tf = $('goldInterval').selectedOptions[0].textContent;
+  ask(`Analyse the current XAU/USD ${tf} chart using live data: trend, key support/resistance levels, momentum (RSI/MACD) and bullish vs bearish scenarios.`);
+};
+
+// Reopen the chat the user was last in (if it still exists), otherwise start fresh.
+(async () => {
+  const chats = await loadChats();
+  const last = store.get('lastChat');
+  if (last && chats.some(c => c.id === last)) openChat(last); else newChat();
+})();
+</script>
+</body>
+</html>
