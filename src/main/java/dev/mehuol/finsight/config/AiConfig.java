@@ -33,6 +33,12 @@ public class AiConfig {
         return builder.defaultSystem(summaryPrompt).build();
     }
 
+    /** Plain client for one-off tasks that set their own system prompt (portfolio extraction and insights). */
+    @Bean
+    public ChatClient analysisClient(ChatClient.Builder builder) {
+        return builder.build();
+    }
+
     /**
      * Wraps the user's question with retrieved document excerpts. Replaces Spring AI's default
      * RAG prompt, which forbids answering from anything but the documents.

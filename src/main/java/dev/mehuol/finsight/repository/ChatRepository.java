@@ -21,9 +21,27 @@ public class ChatRepository {
         this.jdbc = jdbc;
     }
 
-    /** Creates the chat if it doesn't exist yet; an existing chat keeps its title. */
-    public void insertIfAbsent(String chatId, String title) {
-        jdbc.update("INSERT INTO chat (id, title) VALUES (?, ?) ON CONFLICT (id) DO NOTHING", chatId, title);
+    /** Who a chat id belongs to, from one user's point of view. */
+    public enum Ownership { NEW, MINE, NOT_MINE }
+
+    public Ownership ownership(String chatId, long userId) {
+        List<Long> owners = jdbc.query("SELECT user_id FROM chat WHERE id = ?",
+                (rs, i) -> rs.getObject("user_id", Long.class), chatId);
+        if (owners.isEmpty()) {
+            return Ownership.NEW;
+        }
+        return Long.valueOf(userId).equals(owners.get(0)) ? Ownership.MINE : Ownership.NOT_MINE;
+    }
+
+    /** Creates the chat for this user if it doesn't exist yet; an existing chat keeps its title and owner. */
+    public void insertIfAbsent(String chatId, String title, long userId) {
+        jdbc.update("INSERT INTO chat (id, title, user_id) VALUES (?, ?, ?) ON CONFLICT (id) DO NOTHING",
+                chatId, title, userId);
+    }
+
+    /** Gives chats without an owner (created before accounts existed) to this user. */
+    public int assignUnowned(long userId) {
+        return jdbc.update("UPDATE chat SET user_id = ? WHERE user_id IS NULL", userId);
     }
 
     public void insertMessage(String chatId, String role, String label, String content, boolean hasImage) {
@@ -35,11 +53,11 @@ public class ChatRepository {
         jdbc.update("UPDATE chat SET updated_at = now() WHERE id = ?", chatId);
     }
 
-    public List<ChatSummary> findRecent() {
-        return jdbc.query("SELECT id, title, updated_at FROM chat ORDER BY updated_at DESC LIMIT ?",
+    public List<ChatSummary> findRecent(long userId) {
+        return jdbc.query("SELECT id, title, updated_at FROM chat WHERE user_id = ? ORDER BY updated_at DESC LIMIT ?",
                 (rs, i) -> new ChatSummary(rs.getString("id"), rs.getString("title"),
                         rs.getObject("updated_at", OffsetDateTime.class)),
-                LIST_LIMIT);
+                userId, LIST_LIMIT);
     }
 
     public List<ChatMessageDto> findMessages(String chatId) {

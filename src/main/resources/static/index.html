@@ -73,9 +73,50 @@
   .msg.user img { display: block; max-width: 260px; max-height: 200px; border-radius: 8px; margin-bottom: 6px; }
   .msg.bot { align-self: flex-start; background: var(--panel); border: 1px solid var(--border); max-width: 92%; }
   .msg.bot.err { border-color: var(--danger); color: var(--danger); }
+  .msg.bot.err .retry { display: block; margin-top: 8px; color: var(--text); }
   .msg.event { align-self: center; text-align: center; font-size: 12px; color: var(--muted); padding: 2px 10px; }
   .doc-actions { margin-top: 8px; }
   .doc-hint { margin-top: 4px; font-size: 11px; }
+
+  /* ---- portfolio card: categorical slots (fixed order) + diverging gain/loss pair ---- */
+  .viz {
+    --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+    --series-5: #e87ba4; --series-6: #008300; --series-other: #a9a8a1;
+    --gain: #2a78d6; --loss: #e34948; --axis: #d6d5cf;
+  }
+  @media (prefers-color-scheme: dark) {
+    .viz {
+      --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+      --series-5: #d55181; --series-6: #008300; --series-other: #5c5b56;
+      --gain: #3987e5; --loss: #e66767; --axis: #3a3a37;
+    }
+  }
+  .msg.bot.portfolio { width: 92%; }
+  .viz h4 { font-size: 13px; margin: 18px 0 8px; color: var(--muted); font-weight: 600; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 6px; }
+  .kpi { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .kpi .k { font-size: 12px; color: var(--muted); }
+  .kpi .v { font-size: 20px; font-weight: 650; margin-top: 2px; }
+  .kpi .sub { font-size: 12px; color: var(--muted); }
+  .stack { display: flex; gap: 2px; height: 14px; border-radius: 4px; overflow: hidden; background: var(--panel); }
+  .stack span { min-width: 3px; }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; font-size: 13px; }
+  .legend-row i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .legend-row b { font-weight: 600; margin-left: 4px; }
+  .pnl-rows { display: grid; grid-template-columns: minmax(80px, 160px) 1fr auto; gap: 6px 10px; align-items: center; font-size: 13px; }
+  .pnl-rows .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pnl-track { position: relative; height: 12px; }
+  .pnl-track::before { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--axis); }
+  .pnl-bar { position: absolute; top: 0; height: 12px; }
+  .pnl-bar.gain { left: 50%; background: var(--gain); border-radius: 0 4px 4px 0; }
+  .pnl-bar.loss { right: 50%; background: var(--loss); border-radius: 4px 0 0 4px; }
+  .pnl-rows .val { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .warnings { margin: 14px 0 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; list-style: none; font-size: 13px; }
+  .warnings li + li { margin-top: 4px; }
+  .viz details { margin-top: 14px; font-size: 13px; }
+  .viz summary { cursor: pointer; color: var(--accent); }
+  .viz table td.num, .viz table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .viz-note { margin-top: 10px; font-size: 11px; color: var(--muted); }
   .msg.user .img-note { display: block; font-size: 12px; opacity: .8; margin-bottom: 4px; }
   .msg.bot .label { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
   .msg.bot p:first-child { margin-top: 0; } .msg.bot p:last-child { margin-bottom: 0; }
@@ -104,6 +145,22 @@
   .btn:disabled { opacity: .5; cursor: default; }
   .hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
 
+  /* ---- sign-in / sign-up ---- */
+  .auth { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .auth[hidden] { display: none; }
+  .auth-card { width: 100%; max-width: 360px; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 28px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .auth-card h1 { font-size: 20px; text-align: center; }
+  .auth-sub { margin: 0 0 4px; text-align: center; color: var(--muted); font-size: 14px; }
+  .auth-card label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+  .auth-card input { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; }
+  .auth-card input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .auth-hint { font-size: 12px; color: var(--muted); margin-top: -6px; }
+  .auth-card .btn { height: 42px; }
+  .auth-switch { margin: 0; text-align: center; font-size: 13px; color: var(--muted); }
+  .link { background: none; border: none; padding: 0; color: var(--accent); font: inherit; cursor: pointer; text-decoration: underline; }
+  .account { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; font-size: 13px; }
+  .account span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+
   @media (max-width: 760px) {
     body { flex-direction: column; height: auto; min-height: 100vh; }
     aside { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
@@ -116,6 +173,20 @@
 </style>
 </head>
 <body>
+<div id="auth" class="auth" hidden>
+  <form id="authForm" class="auth-card" novalidate>
+    <h1>📈 FinSight AI</h1>
+    <p class="auth-sub" id="authTitle">Sign in to your account</p>
+    <label>Email <input type="email" id="authEmail" autocomplete="email" required></label>
+    <label>Password <input type="password" id="authPassword" autocomplete="current-password" required></label>
+    <div class="auth-hint" id="authHint" hidden>At least 8 characters</div>
+    <div class="status err" id="authError" role="alert"></div>
+    <button class="btn" id="authSubmit">Sign in</button>
+    <p class="auth-switch"><span id="authSwitchText">New here?</span>
+      <button type="button" class="link" id="authSwitch">Create an account</button></p>
+  </form>
+</div>
+
 <aside>
   <h1>📈 FinSight AI</h1>
   <button class="ghost new-chat" id="newChat">＋ New chat</button>
@@ -124,14 +195,15 @@
   <div class="docs-box">
     <h2>Documents in this chat</h2>
     <label class="drop" id="drop">
-      <input type="file" id="file" accept=".pdf,.txt,.md" multiple hidden>
-      <strong>Upload</strong> or drop reports here<br><span style="font-size:12px">PDF, TXT, MD · up to 5 files per chat · 20 MB each</span>
+      <input type="file" id="file" accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.txt,.md" multiple hidden>
+      <strong>Upload</strong> or drop reports here<br><span style="font-size:12px">PDF, Word, Excel, CSV, TXT · up to 5 per chat · 20 MB each</span>
     </label>
     <div class="status" id="status"></div>
     <ul id="docs"></ul>
   </div>
   <button class="ghost gold" id="goldToggle">🥇 Gold XAU/USD live chart</button>
   <div class="note">AI-generated analysis for education only. Not financial advice or trading signals.</div>
+  <div class="account"><span id="userEmail"></span><button class="ghost" id="signOut">Sign out</button></div>
 </aside>
 
 <main>
@@ -154,7 +226,7 @@
   <div id="messages">
     <div class="empty" id="empty">
       <h3>Ask about your financial documents, gold charts or markets</h3>
-      Each chat has its own documents. Upload a report to get an instant summary, attach a chart screenshot (📎 or paste) for analysis,
+      Each chat has its own documents. Upload a report or a holdings sheet (Excel/Word) for a summary or portfolio analysis, attach a chart screenshot (📎 or paste) for analysis,
       or ask about live gold prices.
       <div class="chips">
         <button>What is the current XAU/USD trend on the 4H chart?</button>
@@ -177,6 +249,20 @@
 </main>
 
 <script>
+// ---------- session & CSRF ----------
+// Every API call goes through fetch: state-changing requests echo the XSRF-TOKEN cookie in the
+// X-XSRF-TOKEN header (Spring Security's CSRF check), and a 401 means the session is gone.
+const nativeFetch = window.fetch.bind(window);
+const csrfToken = () => decodeURIComponent((document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/) || [])[1] || '');
+window.fetch = async (url, options = {}) => {
+  const method = (options.method || 'GET').toUpperCase();
+  const headers = new Headers(options.headers || {});
+  if (method !== 'GET' && method !== 'HEAD') headers.set('X-XSRF-TOKEN', csrfToken());
+  const res = await nativeFetch(url, { ...options, headers, credentials: 'same-origin' });
+  if (res.status === 401 && !String(url).startsWith('/api/auth/')) showAuth('Your session has ended. Please sign in again.');
+  return res;
+};
+
 const $ = id => document.getElementById(id);
 const messages = $('messages'), input = $('input'), send = $('send'), statusEl = $('status');
 // randomUUID only exists on https/localhost; fall back when opened over a LAN IP.
@@ -212,15 +298,21 @@ function addMessage(role, content, label) {
   return div;
 }
 
-/** Reads an NDJSON token stream ({"t":..} / {"error":..}) and renders it as Markdown into el. */
-async function streamInto(el, responsePromise) {
+/**
+ * Reads an NDJSON token stream ({"t":..} / {"error":..}) and renders it as Markdown into el.
+ * A {"portfolio": "<json>"} event is handed to onPortfolio (it arrives before the text).
+ */
+async function streamInto(el, responsePromise, onPortfolio) {
   const labelHtml = el.dataset.label ? `<div class="label">${esc(el.dataset.label)}</div>` : '';
   el.classList.add('typing');
   el.innerHTML = labelHtml;
   let answer = '';
   try {
     const res = await responsePromise;
-    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Server error ${res.status}`);
+    }
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
@@ -234,6 +326,7 @@ async function streamInto(el, responsePromise) {
         if (!line.trim()) continue;
         const chunk = JSON.parse(line);
         if (chunk.error) throw new Error(chunk.error);
+        if (chunk.portfolio) { onPortfolio?.(JSON.parse(chunk.portfolio)); continue; }
         answer += chunk.t;
         el.innerHTML = labelHtml + md(answer);
         messages.scrollTop = messages.scrollHeight;
@@ -258,7 +351,12 @@ let currentDocs = [];
 let pollTimer = null;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-/** "report.pdf is ready" note with a Summarize chip; anything else the user asks in the chat box. */
+const isPortfolioFile = name => /\.(xlsx|xls|csv|docx|doc)$/i.test(name);
+
+/**
+ * "report.pdf is ready" note with a Summarize chip (plus "Analyse portfolio" for Excel/Word/CSV);
+ * anything else the user asks in the chat box.
+ */
 function addDocReadyMessage(name, text) {
   const el = addMessage('event', esc(text));
   const chips = document.createElement('div');
@@ -267,6 +365,12 @@ function addDocReadyMessage(name, text) {
   summarizeBtn.textContent = '📊 Summarize';
   summarizeBtn.dataset.summarize = name;
   chips.appendChild(summarizeBtn);
+  if (isPortfolioFile(name)) {
+    const portfolioBtn = document.createElement('button');
+    portfolioBtn.textContent = '📈 Analyse portfolio';
+    portfolioBtn.dataset.portfolio = name;
+    chips.appendChild(portfolioBtn);
+  }
   el.appendChild(chips);
   el.insertAdjacentHTML('beforeend', '<div class="doc-hint">…or ask anything about it below</div>');
   messages.scrollTop = messages.scrollHeight;
@@ -290,11 +394,13 @@ async function loadDocs() {
       : d.status === 'failed' ? '⚠️ failed' : `${d.chunks}`;
     li.innerHTML = `<span>📄</span><span class="name"></span><span class="meta"></span>
       ${d.status === 'ready' ? '<button class="icon-btn" title="Summarize">📝</button>' : ''}
+      ${d.status === 'ready' && isPortfolioFile(d.name) ? '<button class="icon-btn" title="Analyse portfolio">📈</button>' : ''}
       <button class="icon-btn del" title="${d.status === 'processing' ? 'Cancel upload' : 'Delete'}">×</button>`;
     li.querySelector('.name').textContent = d.name;
     li.querySelector('.meta').textContent = state;
     li.title = d.message ? `${d.name}: ${d.message}` : `${d.name} (${d.chunks} chunks)`;
     li.querySelector('[title="Summarize"]')?.addEventListener('click', () => summarize(d.name));
+    li.querySelector('[title="Analyse portfolio"]')?.addEventListener('click', () => analysePortfolio(d.name));
     li.querySelector('.del').onclick = () => deleteDoc(d);
     ul.appendChild(li);
   }
@@ -339,11 +445,121 @@ async function uploadFiles(files) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || data.message || res.statusText);
       awaitingReady.add(`${conversationId}\u0000${data.name}`);
-      store.set('lastChat', conversationId);
+      store.set(lastChatKey(), conversationId);
       loadChats();
     } catch (e) { setStatus(`✗ ${file.name}: ${e.message}`, true); }
   }
   loadDocs();
+}
+
+// ---------- portfolio ----------
+const MAX_SLICES = 6; // part-to-whole stays readable up to ~6 segments; the rest fold into "Other"
+
+// Amounts are shown in the portfolio's own currency (detected from the file by the server).
+// Currencies listed here use their home country's format - Rs 586,501 for PKR, ₹5,86,500.50
+// for INR; all others use international grouping (€586,500.50). This doesn't depend on the
+// browser's locale, so a portfolio always looks the same.
+const CURRENCY_LOCALES = { PKR: 'en-PK', INR: 'en-IN' };
+
+function moneyFormatter(currency) {
+  const code = /^[A-Z]{3}$/.test(currency || '') ? currency : 'USD';
+  const locale = CURRENCY_LOCALES[code] || 'en-US';
+  try {
+    // Decimal places follow the currency itself (2 for INR/USD/EUR, 0 for JPY).
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: code });
+  } catch {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+  }
+}
+
+function signed(text, value) { return (value > 0 ? '+' : '') + text; }
+
+/** One 100% stacked bar + legend; slices arrive sorted by value. */
+function allocationHtml(slices, money) {
+  let shown = slices;
+  if (slices.length > MAX_SLICES) {
+    const rest = slices.slice(MAX_SLICES - 1);
+    shown = [...slices.slice(0, MAX_SLICES - 1), {
+      label: `Other (${rest.length})`,
+      value: rest.reduce((s, x) => s + x.value, 0),
+      percent: Math.round(rest.reduce((s, x) => s + x.percent, 0) * 100) / 100,
+      other: true,
+    }];
+  }
+  const color = (s, i) => s.other || s.label === 'Unknown' ? 'var(--series-other)' : `var(--series-${i + 1})`;
+  const bar = shown.map((s, i) =>
+    `<span style="flex:${s.percent} 1 0;background:${color(s, i)}" title="${esc(s.label)}: ${money.format(s.value)} (${s.percent}%)"></span>`).join('');
+  const legend = shown.map((s, i) =>
+    `<span title="${money.format(s.value)}"><i style="background:${color(s, i)}"></i>${esc(s.label)}<b>${s.percent}%</b></span>`).join('');
+  return `<div class="stack" role="img" aria-label="${esc(shown.map(s => `${s.label} ${s.percent}%`).join(', '))}">${bar}</div>
+    <div class="legend-row">${legend}</div>`;
+}
+
+/** Diverging bars around zero: gains right, losses left, signed values as text. */
+function pnlHtml(holdings, money) {
+  const rows = holdings.filter(h => h.pnl != null).slice(0, 10);
+  if (!rows.length) return '';
+  const max = Math.max(...rows.map(h => Math.abs(h.pnl))) || 1;
+  const body = rows.map(h => {
+    const width = Math.abs(h.pnl) / max * 50;
+    const pct = h.pnlPercent != null ? ` (${signed(h.pnlPercent.toFixed(1) + '%', h.pnlPercent)})` : '';
+    const text = signed(money.format(h.pnl), h.pnl) + pct;
+    return `<span class="nm" title="${esc(h.name)}">${esc(h.name)}</span>
+      <span class="pnl-track" title="${esc(h.name)}: ${esc(text)}"><span class="pnl-bar ${h.pnl >= 0 ? 'gain' : 'loss'}" style="width:${width}%"></span></span>
+      <span class="val">${esc(text)}</span>`;
+  }).join('');
+  return `<h4>Profit / loss by holding${holdings.filter(h => h.pnl != null).length > 10 ? ' (top 10 by weight)' : ''}</h4>
+    <div class="pnl-rows">${body}</div>`;
+}
+
+/** The portfolio card: stat tiles, allocation bars, P&L bars, warnings and the full table. */
+function renderPortfolio(data, label) {
+  const money = moneyFormatter(data.currency);
+  const fmt = v => v == null ? '—' : money.format(v);
+  const num = v => v == null ? '—' : new Intl.NumberFormat(money.resolvedOptions().locale, { maximumFractionDigits: 2 }).format(v);
+  const pnlTile = data.totalPnl == null ? ''
+    : `<div class="kpi"><div class="k">Profit / loss</div><div class="v">${signed(fmt(data.totalPnl), data.totalPnl)}</div>
+       <div class="sub">${data.totalPnlPercent == null ? '' : signed(data.totalPnlPercent.toFixed(2) + '%', data.totalPnlPercent)}</div></div>`;
+  const rows = data.holdings.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.assetType)}</td><td>${esc(h.sector)}</td>
+    <td class="num">${num(h.quantity)}</td><td class="num">${fmt(h.invested)}</td><td class="num">${fmt(h.currentValue)}</td>
+    <td class="num">${h.pnl == null ? '—' : signed(fmt(h.pnl), h.pnl)}</td><td class="num">${h.weightPercent}%</td></tr>`).join('');
+  const warnings = data.warnings.length
+    ? `<ul class="warnings">${data.warnings.map(w => `<li>⚠️ ${esc(w)}</li>`).join('')}</ul>` : '';
+
+  const el = addMessage('bot', `<div class="label">${esc(label)}</div>
+    <div class="kpis">
+      <div class="kpi"><div class="k">Current value</div><div class="v">${fmt(data.totalCurrentValue)}</div></div>
+      <div class="kpi"><div class="k">Invested</div><div class="v">${fmt(data.totalInvested)}</div></div>
+      ${pnlTile}
+      <div class="kpi"><div class="k">Holdings</div><div class="v">${data.holdingsCount}</div></div>
+    </div>
+    <h4>Allocation by asset type</h4>${allocationHtml(data.byAssetType, money)}
+    <h4>Allocation by sector</h4>${allocationHtml(data.bySector, money)}
+    ${pnlHtml(data.holdings, money)}
+    ${warnings}
+    <details><summary>All holdings (${data.holdingsCount})</summary>
+      <table><thead><tr><th>Name</th><th>Type</th><th>Sector</th><th class="num">Qty</th><th class="num">Invested</th>
+      <th class="num">Current</th><th class="num">P&amp;L</th><th class="num">Weight</th></tr></thead><tbody>${rows}</tbody></table>
+    </details>
+    <div class="viz-note">Amounts in ${esc(money.resolvedOptions().currency)} · weights by ${esc(data.weightBasis)} · values as given in ${esc(data.source)} (no live prices)</div>`);
+  el.classList.add('portfolio', 'viz');
+  return el;
+}
+
+async function analysePortfolio(name) {
+  const chatId = conversationId;
+  while (busy) await sleep(500);
+  if (chatId !== conversationId) return;
+  busy = true; send.disabled = true;
+  const insights = addMessage('bot', '', `💡 Portfolio insights · ${name}`);
+  setStatus(`Reading holdings from ${name}…`);
+  await streamInto(insights,
+    fetch('/api/documents/' + encodeURIComponent(name) + '/portfolio?' + chatParam(), { method: 'POST' }),
+    data => messages.insertBefore(renderPortfolio(data, `📈 Portfolio · ${name}`), insights));
+  setStatus('');
+  busy = false; send.disabled = false;
+  offerRetry(insights, () => analysePortfolio(name));
+  loadChats();
 }
 
 async function summarize(name) {
@@ -354,6 +570,7 @@ async function summarize(name) {
   const el = addMessage('bot', '', `📊 Summary · ${name}`);
   await streamInto(el, fetch('/api/documents/' + encodeURIComponent(name) + '/summary?' + chatParam(), { method: 'POST' }));
   busy = false; send.disabled = false;
+  offerRetry(el, () => summarize(name));
   loadChats();
 }
 
@@ -396,24 +613,35 @@ document.addEventListener('paste', e => {
 });
 
 // ---------- chat ----------
-async function ask(question) {
-  if (busy || (!question.trim() && !pendingImage)) return;
+/** Adds a "Try again" button to a failed answer; it runs `retry` once and then disappears. */
+function offerRetry(el, retry) {
+  if (!el.classList.contains('err')) return;
+  const button = document.createElement('button');
+  button.className = 'ghost retry';
+  button.textContent = '↻ Try again';
+  button.onclick = () => { button.remove(); retry(); };
+  el.appendChild(button);
+}
+
+async function ask(question, image = pendingImage) {
+  if (busy || (!question.trim() && !image)) return;
   busy = true; send.disabled = true;
   const userEl = addMessage('user', question || 'Analyse this chart.');
   const body = new FormData();
   body.append('message', question);
   body.append('conversationId', conversationId);
-  if (pendingImage) {
+  if (image) {
     const img = document.createElement('img');
-    img.src = URL.createObjectURL(pendingImage);
+    img.src = URL.createObjectURL(image);
     userEl.prepend(img);
-    body.append('image', pendingImage, pendingImage.name || 'chart.png');
-    clearImage();
+    body.append('image', image, image.name || 'chart.png');
+    if (image === pendingImage) clearImage();
   }
-  store.set('lastChat', conversationId);
+  store.set(lastChatKey(), conversationId);
   const bot = addMessage('bot', '');
   await streamInto(bot, fetch('/api/chat', { method: 'POST', body }));
   busy = false; send.disabled = false; input.focus();
+  offerRetry(bot, () => ask(question, image)); // same question and image again
   loadChats();
 }
 
@@ -468,7 +696,7 @@ function resetMessages() {
 function newChat() {
   if (busy) { setStatus('Wait for the current answer to finish', true); return; }
   conversationId = newId();
-  store.set('lastChat', null);
+  store.set(lastChatKey(), null);
   resetMessages();
   clearImage();
   setStatus('');
@@ -481,7 +709,7 @@ async function openChat(id) {
   if (busy) { setStatus('Wait for the current answer to finish', true); return; }
   if (id === conversationId && !$('empty')) return;
   conversationId = id;
-  store.set('lastChat', id);
+  store.set(lastChatKey(), id);
   setStatus('');
   document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
   loadChats();
@@ -504,6 +732,8 @@ async function openChat(id) {
         } else {
           addMessage('event', esc(m.content));
         }
+      } else if (m.role === 'portfolio') {
+        try { renderPortfolio(JSON.parse(m.content), m.label || '📈 Portfolio'); } catch { /* skip a corrupt entry */ }
       } else {
         addMessage('bot', (m.label ? `<div class="label">${esc(m.label)}</div>` : '') + md(m.content));
       }
@@ -537,6 +767,7 @@ messages.addEventListener('click', e => {
   const chip = e.target.closest('.chips button');
   if (!chip) return;
   if (chip.dataset.summarize) summarize(chip.dataset.summarize);
+  else if (chip.dataset.portfolio) analysePortfolio(chip.dataset.portfolio);
   else ask(chip.textContent);
 });
 $('newChat').onclick = newChat;
@@ -592,11 +823,98 @@ $('goldAsk').onclick = () => {
   ask(`Analyse the current XAU/USD ${tf} chart using live data: trend, key support/resistance levels, momentum (RSI/MACD) and bullish vs bearish scenarios.`);
 };
 
-// Reopen the chat the user was last in (if it still exists), otherwise start fresh.
-(async () => {
+// ---------- account ----------
+let currentUser = null;
+let signingUp = false;
+const lastChatKey = () => 'lastChat:' + (currentUser || '');
+
+/** Shows the app for a signed-in user and reopens their last chat (if it still exists). */
+async function startApp(email) {
+  currentUser = email;
+  $('userEmail').textContent = email;
+  $('userEmail').title = email;
+  $('auth').hidden = true;
+  busy = false; send.disabled = false;
   const chats = await loadChats();
-  const last = store.get('lastChat');
+  const last = store.get(lastChatKey());
   if (last && chats.some(c => c.id === last)) openChat(last); else newChat();
+}
+
+function setAuthMode(signUp) {
+  signingUp = signUp;
+  $('authTitle').textContent = signUp ? 'Create your account' : 'Sign in to your account';
+  $('authSubmit').textContent = signUp ? 'Create account' : 'Sign in';
+  $('authSwitchText').textContent = signUp ? 'Already have an account?' : 'New here?';
+  $('authSwitch').textContent = signUp ? 'Sign in' : 'Create an account';
+  $('authPassword').autocomplete = signUp ? 'new-password' : 'current-password';
+  $('authHint').hidden = !signUp;
+  $('authError').textContent = '';
+}
+
+/** Covers the app with the sign-in form, e.g. on load without a session or when it expires. */
+function showAuth(message = '') {
+  if (!$('auth').hidden) return;
+  clearTimeout(pollTimer);
+  currentUser = null;
+  setAuthMode(false);
+  $('authError').textContent = message;
+  $('auth').hidden = false;
+  $('authEmail').focus();
+}
+
+async function signIn(email, password) {
+  const res = await fetch('/api/auth/login', { method: 'POST', body: new URLSearchParams({ email, password }) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Could not sign in');
+  // Signing in replaces the CSRF token; this call picks up the new cookie.
+  const me = await fetch('/api/auth/me');
+  return (await me.json()).email;
+}
+
+$('authSwitch').onclick = () => setAuthMode(!signingUp);
+$('authForm').onsubmit = async e => {
+  e.preventDefault();
+  const email = $('authEmail').value.trim(), password = $('authPassword').value;
+  if (!email || !password) { $('authError').textContent = 'Enter your email and password.'; return; }
+  if (signingUp && password.length < 8) { $('authError').textContent = 'The password must be at least 8 characters.'; return; }
+  $('authSubmit').disabled = true;
+  $('authError').textContent = '';
+  try {
+    if (signingUp) {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not create the account');
+    }
+    const signedIn = await signIn(email, password);
+    $('authPassword').value = '';
+    startApp(signedIn);
+  } catch (err) {
+    $('authError').textContent = err.message;
+  } finally {
+    $('authSubmit').disabled = false;
+  }
+};
+
+$('signOut').onclick = async () => {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  await fetch('/api/auth/me'); // fresh CSRF cookie for the next sign-in
+  conversationId = newId();
+  resetMessages();
+  $('chats').innerHTML = '';
+  $('docs').innerHTML = '';
+  setStatus('');
+  showAuth();
+};
+
+// On load: continue the existing session, or ask the user to sign in.
+(async () => {
+  try {
+    const res = await fetch('/api/auth/me');
+    if (res.ok) { startApp((await res.json()).email); return; }
+  } catch { /* server unreachable: show the form */ }
+  showAuth();
 })();
 </script>
 </body>

@@ -27,8 +27,8 @@ public class ReportSummaryService {
     }
 
     /** Streams the summary as NDJSON events, like the chat endpoint. */
-    public Flux<Map<String, String>> summarize(String conversationId, String name) {
-        history.ensureChat(conversationId, "📄 " + name);
+    public Flux<Map<String, String>> summarize(String conversationId, String name, long userId) {
+        history.requireOwnChat(conversationId, userId); // the chat exists: it holds the uploaded file
         return history.streamAndSave(conversationId, "📊 Summary · " + name,
                 Flux.defer(() -> summaryTokens(conversationId, name)));
     }

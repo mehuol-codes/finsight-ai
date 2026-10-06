@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.TextReader;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
+import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -25,13 +26,12 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
-import com.google.genai.errors.ApiException;
-
 import dev.mehuol.finsight.dto.DocumentInfo;
 import dev.mehuol.finsight.event.DocumentReadyEvent;
 import dev.mehuol.finsight.event.DocumentUploadStartedEvent;
 import dev.mehuol.finsight.exception.UploadInProgressException;
 import dev.mehuol.finsight.repository.DocumentChunkRepository;
+import dev.mehuol.finsight.util.AiErrors;
 import dev.mehuol.finsight.util.ConversationIds;
 import jakarta.annotation.PreDestroy;
 
@@ -47,7 +47,10 @@ import jakarta.annotation.PreDestroy;
 public class DocumentService {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentService.class);
-    private static final List<String> SUPPORTED = List.of(".pdf", ".txt", ".md");
+    private static final List<String> TEXT_TYPES = List.of(".txt", ".md", ".csv");
+    private static final List<String> OFFICE_TYPES = List.of(".docx", ".doc", ".xlsx", ".xls");
+    private static final List<String> SUPPORTED = List.of(".pdf", ".txt", ".md", ".csv", ".docx", ".doc", ".xlsx",
+            ".xls");
     private static final int BATCH_SIZE = 10;
     private static final int MAX_RATE_LIMIT_RETRIES = 8;
     public static final int MAX_DOCUMENTS_PER_CHAT = 5;
@@ -96,12 +99,12 @@ public class DocumentService {
      * Parses and splits the file right away (so bad files fail fast), then embeds it in the
      * background. A {@link DocumentReadyEvent} is published once the document is searchable.
      */
-    public DocumentInfo upload(String conversationId, String fileName, byte[] content) {
+    public DocumentInfo upload(String conversationId, long userId, String fileName, byte[] content) {
         ConversationIds.requireValid(conversationId);
         String name = fileName == null ? "" : fileName.strip();
         String lower = name.toLowerCase(Locale.ROOT);
         if (SUPPORTED.stream().noneMatch(lower::endsWith)) {
-            throw new IllegalArgumentException("Only PDF, TXT and MD files are supported");
+            throw new IllegalArgumentException("Supported files: PDF, Word (DOCX/DOC), Excel (XLSX/XLS), CSV, TXT, MD");
         }
 
         List<Document> documentChunks = split(conversationId, name, content);
@@ -120,7 +123,7 @@ public class DocumentService {
             jobs.put(key(conversationId, name), job); // also replaces an old failed attempt
         }
 
-        events.publishEvent(new DocumentUploadStartedEvent(conversationId, name));
+        events.publishEvent(new DocumentUploadStartedEvent(conversationId, name, userId));
         // One file at a time: parallel embedding would only hit the free-tier rate limit sooner.
         ingestQueue.submit(() -> runIngest(job, documentChunks));
         return job.info();
@@ -205,9 +208,7 @@ public class DocumentService {
         };
         List<Document> pages;
         try {
-            pages = name.toLowerCase(Locale.ROOT).endsWith(".pdf")
-                    ? new PagePdfDocumentReader(resource).get()
-                    : new TextReader(resource).get();
+            pages = read(name.toLowerCase(Locale.ROOT), resource);
         }
         catch (RuntimeException e) {
             throw new IllegalArgumentException("Could not read " + name + ": " + e.getMessage(), e);
@@ -222,6 +223,26 @@ public class DocumentService {
         return IntStream.range(0, split.size())
                 .mapToObj(i -> withSource(split.get(i), conversationId, name, i))
                 .toList();
+    }
+
+    /** PDFs are read page by page (for page citations); Word and Excel files go through Apache Tika. */
+    static List<Document> read(String lowerName, Resource resource) {
+        if (lowerName.endsWith(".pdf")) {
+            return new PagePdfDocumentReader(resource).get();
+        }
+        if (OFFICE_TYPES.stream().anyMatch(lowerName::endsWith)) {
+            return new TikaDocumentReader(resource).get();
+        }
+        if (TEXT_TYPES.stream().anyMatch(lowerName::endsWith)) {
+            return new TextReader(resource).get();
+        }
+        throw new IllegalArgumentException("Unsupported file type");
+    }
+
+    /** Whether a file looks like tabular or office data that may hold a portfolio. */
+    public static boolean isSpreadsheetOrWord(String fileName) {
+        String lower = fileName.toLowerCase(Locale.ROOT);
+        return lower.endsWith(".csv") || OFFICE_TYPES.stream().anyMatch(lower::endsWith);
     }
 
     /**
@@ -248,7 +269,7 @@ public class DocumentService {
                 return;
             }
             job.status = DocumentInfo.FAILED;
-            job.message = friendlyError(e);
+            job.message = AiErrors.userMessage(e);
             log.warn("Ingesting {} failed: {}", job.name, job.message);
         }
     }
@@ -267,7 +288,7 @@ public class DocumentService {
                     break;
                 }
                 catch (RuntimeException e) {
-                    if (!isRateLimited(e) || attempt == MAX_RATE_LIMIT_RETRIES) {
+                    if (!AiErrors.isRateLimited(e) || attempt == MAX_RATE_LIMIT_RETRIES) {
                         throw e;
                     }
                     int waitSeconds = attempt == 1 ? 30 : 60;
@@ -282,26 +303,6 @@ public class DocumentService {
             job.message = "Embedding…";
             log.info("Embedded {} / {} chunks of {}", job.embedded, documentChunks.size(), job.name);
         }
-    }
-
-    private static boolean isRateLimited(Throwable e) {
-        for (Throwable t = e; t != null; t = t.getCause()) {
-            if (t instanceof ApiException api && api.code() == 429) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static String friendlyError(Throwable e) {
-        if (isRateLimited(e)) {
-            return "Gemini free-tier quota is exhausted (possibly the daily limit). Try again later.";
-        }
-        Throwable root = e;
-        while (root.getCause() != null) {
-            root = root.getCause();
-        }
-        return String.valueOf(root.getMessage());
     }
 
     private static void checkCancelled(IngestJob job) {

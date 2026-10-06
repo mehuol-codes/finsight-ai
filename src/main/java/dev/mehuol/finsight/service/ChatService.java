@@ -44,7 +44,8 @@ public class ChatService {
      * Streams the answer as NDJSON events: {"t":"token"} ... or {"error":"..."}. Validation
      * problems are also sent as an error event, because the UI reads this endpoint as a stream.
      */
-    public Flux<Map<String, String>> chat(String conversationId, String message, byte[] image, String imageType) {
+    public Flux<Map<String, String>> chat(String conversationId, String message, byte[] image, String imageType,
+            long userId) {
         boolean hasImage = image != null && image.length > 0;
         if (message.isBlank() && !hasImage) {
             return error("Message is empty");
@@ -57,7 +58,7 @@ public class ChatService {
         }
 
         String text = message.isBlank() ? "Analyse this chart." : message;
-        history.ensureChat(conversationId, text);
+        history.ensureChat(conversationId, text, userId);
         history.addMessage(conversationId, ChatMessageDto.USER, null, text, hasImage);
 
         ChatClient.ChatClientRequestSpec request = chatClient.prompt()

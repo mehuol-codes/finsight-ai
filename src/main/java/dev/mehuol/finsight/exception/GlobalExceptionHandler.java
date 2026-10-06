@@ -16,9 +16,14 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 
-    @ExceptionHandler(UploadInProgressException.class)
-    public ResponseEntity<Map<String, String>> conflict(UploadInProgressException e) {
+    @ExceptionHandler({ UploadInProgressException.class, AccountExistsException.class })
+    public ResponseEntity<Map<String, String>> conflict(RuntimeException e) {
         return error(HttpStatus.CONFLICT, e.getMessage());
+    }
+
+    @ExceptionHandler(ChatNotFoundException.class)
+    public ResponseEntity<Map<String, String>> notFound(ChatNotFoundException e) {
+        return error(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
     @ExceptionHandler(MarketDataException.class)
